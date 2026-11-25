@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SCOUT</title>
+<style>
+* { box-sizing: border-box; }
+:root { color-scheme: light; --ink: #282725; --muted: #716b63; --paper: #fff; --blue: #3d536a; --rust: #a45d40; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 15px/1.5 "Avenir Next","Helvetica Neue",Arial,sans-serif; }
+main { max-width: 510px; margin: 0 auto; padding: 34px 26px 40px; }
+header { display: flex; justify-content: space-between; align-items: center; gap: 18px; margin: 0 0 25px; }
+h1 { font: 500 43px/1 Baskerville,"Palatino Linotype",Palatino,Georgia,serif; letter-spacing: -1.1px; margin: 0 0 6px; }
+header p { margin: 0; color: var(--muted); font: 400 14px/1.4 "Avenir Next","Helvetica Neue",Arial,sans-serif; letter-spacing: .12px; }
+a { color: var(--blue); text-underline-offset: 3px; }
+header a { display: flex; align-items: center; justify-content: center; color: var(--ink); width: 42px; height: 42px; flex-shrink: 0; }
+header a:hover { color: var(--blue); }
+header a svg { width: 25px; height: 25px; }
+[hidden] { display: none!important; }
+figure { margin: 0; min-width: 0; }
+.plot { background: #f5f2ec; padding: 12px 8px 7px; border-radius: 3px; }
+#view { display: block; width: 100%; height: auto; max-width: 440px; margin: 0 auto; font-family: "Avenir Next","Helvetica Neue",Arial,sans-serif; font-variant-numeric: tabular-nums; }
+.legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 22px; margin: 5px 0 6px; padding: 0; font: 12px/1.4 "Avenir Next","Helvetica Neue",Arial,sans-serif; color: #665e54; }
+.legend span { display: inline-flex; align-items: center; gap: 7px; }
+.legend span::before { content: ""; display: inline-block; width: 21px; border-top: 1.6px solid #a45d40; }
+.legend span:last-child::before { border-top: 1.6px dashed #536e8a; }
+#parameters { margin: 18px 0 0; }
+#parameters label { font: 500 15px/1.4 "Avenir Next","Helvetica Neue",Arial,sans-serif; }
+#parameters output { font: 13px/1.4 "Avenir Next","Helvetica Neue",Arial,sans-serif; font-variant-numeric: tabular-nums; }
+label { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-size: 13px; }
+output,.range,td:last-child { font-family: "Avenir Next","Helvetica Neue",Arial,sans-serif; font-variant-numeric: tabular-nums; }
+output { color: var(--blue); }
+input[type=range] { display: block; width: 100%; margin: 13px 0 3px; accent-color: var(--blue); cursor: pointer; }
+.range { display: flex; justify-content: space-between; color: var(--muted); font-size: 11px; }
+section { margin-top: 32px; }
+h2 { font: 500 23px/1.2 Baskerville,"Palatino Linotype",Palatino,Georgia,serif; margin: 0 0 10px; }
+.upload-area { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 76px; border: 1px dashed #bcb5a9; padding: 16px 12px; text-align: center; cursor: pointer; background: #fbfaf7; }
+.upload-area:hover,.upload-area:focus-within { background: #f1ede5; border-color: var(--blue); }
+.upload-area svg { width: 21px; height: 21px; margin-bottom: 6px; color: var(--blue); }
+.upload-area strong { font: 500 14px/1.4 "Avenir Next","Helvetica Neue",Arial,sans-serif; color: var(--blue); }
+.upload-area small { color: var(--muted); font-size: 11px; margin-top: 3px; }
+#upload { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
+button { font: inherit; font-size: 12px; color: var(--blue); padding: 5px 0; border: 0; background: transparent; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+button:hover { color: var(--ink); }
+button:disabled { cursor: wait; opacity: .5; }
+#status { margin: 5px 0 0; color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+#status:empty { display: none; }
+#status.error { color: #963e2e; }
+.note { font-size: 12px; color: var(--muted); margin: 9px 0; }
+#interpretation p { margin: 0; font-size: 14px; line-height: 1.65; }
+details { margin-top: 15px; background: #f5f2ec; padding: 12px 14px; font-family: "Avenir Next","Helvetica Neue",Arial,sans-serif; }
+summary { cursor: pointer; font: 500 15px/1.4 "Avenir Next","Helvetica Neue",Arial,sans-serif; color: var(--blue); }
+table { border-collapse: collapse; width: 100%; font: 13px/1.4 "Avenir Next","Helvetica Neue",Arial,sans-serif; margin-top: 9px; }
+td { padding: 8px 0; vertical-align: baseline; }
+td:first-child { padding-right: 10px; color: var(--muted); }
+td:last-child { text-align: right; white-space: nowrap; color: var(--ink); font-family: inherit; font-variant-numeric: tabular-nums; }
+:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
+@media (max-width: 420px) {
+  main { padding: 25px 20px 30px; }
+  header { margin-bottom: 20px; }
+  h1 { font-size: 37px; }
+  .plot { padding: 8px 3px 5px; }
+  section { margin-top: 27px; }
+}
+</style>
+</head>
+<body>
+<main>
+<header>
+<div><h1>SCOUT</h1><p>Scoliosis Outsight Tracker</p></div>
+<a href="https://github.com/liminae/SCOUT" aria-label="GitHub repository" title="GitHub repository"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .75a11.25 11.25 0 0 0-3.56 21.92c.56.1.77-.24.77-.54v-2.1c-3.13.68-3.79-1.33-3.79-1.33-.51-1.3-1.25-1.65-1.25-1.65-1.02-.7.08-.68.08-.68 1.13.08 1.72 1.16 1.72 1.16 1 1.72 2.63 1.22 3.27.93.1-.73.39-1.22.71-1.5-2.5-.29-5.13-1.25-5.13-5.56 0-1.23.44-2.23 1.16-3.02-.12-.29-.5-1.43.11-2.98 0 0 .95-.3 3.09 1.15a10.78 10.78 0 0 1 5.63 0c2.14-1.45 3.08-1.15 3.08-1.15.62 1.55.23 2.69.12 2.98.72.79 1.16 1.79 1.16 3.02 0 4.32-2.64 5.27-5.15 5.55.4.35.76 1.03.76 2.08v3.1c0 .3.2.65.78.54A11.25 11.25 0 0 0 12 .75Z"/></svg></a>
+</header>
+<figure>
+<div class="plot">
+<svg id="view" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 390 449" role="img" aria-labelledby="plot-title">
+<title id="plot-title">Centerline and Linear Fit</title>
+<g transform="translate(48 12)">
+<rect width="320" height="400" fill="#f5f2ec"/>
+<image id="inputImage" width="320" height="400" opacity=".72" visibility="hidden"/>
+<g id="grid" stroke="#e1dcd2" stroke-width=".7"></g>
+<path id="silhouette" fill="#e7d8c3" stroke="#a28c70" stroke-width="1.1" stroke-linejoin="round"/>
+<g id="segments" fill="#e7d8c3" stroke="#a28c70" stroke-width=".9" stroke-linejoin="round" aria-hidden="true"></g>
+<path id="reference" fill="none" stroke="#536e8a" stroke-width="1.7" stroke-dasharray="5 3"/>
+<path id="centerline" fill="none" stroke="#a45d40" stroke-width="2" stroke-linecap="round"/>
+<g id="ticks" fill="#766e64" font-size="10"></g>
+<text x="160" y="433" text-anchor="middle" fill="#716b63" font-size="11">X (px)</text>
+<text transform="translate(-37 200) rotate(-90)" text-anchor="middle" fill="#716b63" font-size="11">Y (px)</text>
+</g>
+</svg>
+<div class="legend">
+<span>Centerline</span>
+<span>Linear Fit</span>
+</div>
+</div>
+</figure>
+<div id="parameters">
+<label for="bend">Displacement <output id="value" for="bend">30 px</output></label>
+<input id="bend" type="range" min="-50" max="50" value="30" step="1">
+<div class="range" aria-hidden="true"><span>−50</span><span>0</span><span>50</span></div>
+</div>
+<section class="upload" aria-labelledby="upload-heading">
+<h2 id="upload-heading">Input</h2>
+<label class="upload-area" for="upload">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V3m-5 5 5-5 5 5M4 15v5h16v-5"/></svg>
+<strong>Upload Spine Silhouette (10 MB Max)</strong>
+<input id="upload" type="file" accept="image/png,image/jpeg,image/webp">
+</label>
+
+<button id="reset" type="button" hidden>Reset Example</button>
+<p id="status" role="status" aria-live="polite"></p>
+</section>
+<section aria-label="Measurements">
+<details>
+<summary>Measurements</summary>
+<table aria-label="Normalized geometric measurements">
+<tbody>
+<tr><td>RMS Lateral Deviation</td><td id="rms"></td></tr>
+<tr><td>Maximum Lateral Deviation</td><td id="max"></td></tr>
+<tr><td>Superior-to-Inferior Shift</td><td id="shift"></td></tr>
+</tbody>
+</table>
+</details>
+</section>
+<section aria-labelledby="interpretation-heading">
+<h2 id="interpretation-heading">Findings</h2>
+<div id="interpretation" aria-live="polite"><p id="shape"></p></div>
+</section>
+
+</main>
+<script>
+function rows(bend) {
+  return Array.from({ length: 290 }, (_, i) => {
+    const t = i/289, c = 160+bend*Math.sin(2*Math.PI*t);
+    const w = (23+16*t+3*Math.sin(Math.PI*t))*(.73+.27*Math.sin(Math.PI*t)**.4);
+    return [55+i, c-w, c+w];
+  });
+}
+function measure(all) {
+  const top = all[0][0], bottom = all[all.length-1][0], h = bottom-top+1;
+  const r = all.filter(a => a[0]>=top+Math.floor(.15*h) && a[0]<top+Math.floor(.85*h)), n = r.length;
+  if(n<.6*h || n<16) throw new Error("incomplete silhouette");
+  const y = r.map(a => a[0]), x = r.map(a => (a[1]+a[2])/2);
+  const mean = a => a.reduce((s, v) => s+v, 0)/a.length;
+  const ym = mean(y), xm = mean(x), w = r.map(a => a[2]-a[1]+1).sort((a, b) => a-b), scale = w[Math.floor(n/2)];
+  if(scale<5 || y[0]===y[n-1]) throw new Error("silhouette too narrow");
+  const slope = y.reduce((s, v, i) => s+(v-ym)*(x[i]-xm), 0)/y.reduce((s, v) => s+(v-ym)**2, 0);
+  const fitted = y.map(v => xm+slope*(v-ym)), error = x.map((v, i) => (v-fitted[i])/scale);
+  const k = Math.floor(.15*(n-1))+1;
+  return { r, x, fitted, rms: Math.sqrt(mean(error.map(v => v*v))), max: Math.max(...error.map(Math.abs)), shift: (mean(x.slice(-k))-mean(x.slice(0, k)))/scale };
+}
+
+const ns = 'http://www.w3.org/2000/svg';
+const byid = id => document.getElementById(id);
+function element(tag, attributes, parent, value) {
+  const el = document.createElementNS(ns, tag);
+  Object.entries(attributes).forEach(([key, v]) => el.setAttribute(key, v));
+  if(value!==undefined) el.textContent = value;
+  parent.appendChild(el);
+}
+for(let x = 0; x<=320; x += 80) {
+  element('line', { x1: x, y1: 0, x2: x, y2: 400 }, byid('grid'));
+  element('text', { x, y: 417, 'text-anchor': 'middle' }, byid('ticks'), x);
+}
+for(let y = 0; y<=400; y += 80) {
+  element('line', { x1: 0, y1: y, x2: 320, y2: y }, byid('grid'));
+  element('text', { x:-7, y: y+3, 'text-anchor': 'end' }, byid('ticks'), y);
+}
+function path(points) {
+  return points.map(([x, y], i) => (i ? 'L': 'M')+x.toFixed(3)+' '+y.toFixed(3)).join(' ');
+}
+function drawSegments(all, source) {
+  const g = byid('segments');
+  g.replaceChildren();
+  if(source) return;
+  const count = 19;
+  for(let i = 0; i<count; i++) {
+    const a = Math.floor(i*all.length/count)+1, b = Math.floor((i+1)*all.length/count)-2;
+    if(b<=a+3) continue;
+    const top = all[a], bottom = all[b], mid = all[Math.floor((a+b)/2)];
+    const y = top[0], z = bottom[0], h = z-y, k = Math.min(4, h*.25);
+    const d = [
+      'M', top[1]+k, y,
+      'Q', top[1], y, top[1], y+k,
+      'Q', mid[1]-1, mid[0], bottom[1], z-k,
+      'Q', bottom[1], z, bottom[1]+k, z,
+      'Q', (bottom[1]+bottom[2])/2, z+1, bottom[2]-k, z,
+      'Q', bottom[2], z, bottom[2], z-k,
+      'Q', mid[2]+1, mid[0], top[2], y+k,
+      'Q', top[2], y, top[2]-k, y,
+      'Q', (top[1]+top[2])/2, y-1, top[1]+k, y, 'Z'
+    ].join(' ');
+    element('path', { d }, g);
+  }
+}
+function draw(all, source) {
+  const m = measure(all);
+  const left = all.map(a => [a[1], a[0]]), right = all.slice().reverse().map(a => [a[2], a[0]]);
+  for(const key of ['rms', 'max', 'shift']) byid(key).textContent = m[key].toFixed(4);
+  const subject = source ? 'The extracted centerline': 'The simulated spinal centerline';
+  const residual = m.x.map((v, i) => v-m.fitted[i]);
+  const deviates = residual.some(v => Math.abs(v)>.5);
+  const percent = Math.round(100*m.max);
+  const shape = !deviates
+    ? subject+' shows minimal lateral deviation from its linear reference.'
+    : subject+' shows lateral curvature, with a maximum deviation of '+(percent<1 ? 'less than 1': percent)+'% of the median silhouette width relative to its linear reference.';
+  const offset = Math.abs(m.shift)<.005
+    ? 'The superior and inferior portions of the measured region are approximately aligned.'
+    : 'The inferior portion is displaced '+(m.shift>0 ? 'rightward': 'leftward')+' relative to the superior portion in image coordinates.';
+  byid('shape').textContent = shape+' '+offset+(source ? ' These geometric findings do not establish a clinical diagnosis.': '');
+  byid('reset').hidden = !source;
+  byid('silhouette').setAttribute('d', path(left.concat(right))+' Z');
+  byid('silhouette').setAttribute('visibility', source ? 'visible': 'hidden');
+  byid('silhouette').setAttribute('fill-opacity', '.13');
+  drawSegments(all, source);
+  byid('centerline').setAttribute('d', path(m.r.map((a, i) => [m.x[i], a[0]])));
+  byid('reference').setAttribute('d', path(m.r.map((a, i) => [m.fitted[i], a[0]])));
+  byid('inputImage').setAttribute('visibility', source ? 'visible': 'hidden');
+  if(source) byid('inputImage').setAttribute('href', source);
+  else byid('inputImage').removeAttribute('href');
+  byid('grid').setAttribute('opacity', source ? '.4': '1');
+  byid('plot-title').textContent = (source ? 'Uploaded Image': 'Example')+': Centerline and Linear Fit';
+}
+function update() {
+  const bend = Number(byid('bend').value);
+  byid('value').textContent = bend+' px';
+  draw(rows(bend), null);
+}
+function status(message, error = false) {
+  byid('status').textContent = message;
+  byid('status').className = error ? 'error': '';
+}
+let engine = null;
+function opencv() {
+  if(engine) return engine;
+  engine = new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    let timer, settled = false, attached = false;
+    const finish = value => {
+      if(settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve({ cv: value });
+    };
+    const fail = () => {
+      if(settled) return;
+      settled = true;
+      clearTimeout(timer);
+      script.remove();
+      reject(new Error('OpenCV failed to load'));
+    };
+    const check = () => {
+      if(settled) return;
+      const api = window.cv;
+      if(api && typeof api.Mat==='function') {
+        finish(api);
+        return;
+      }
+      if(api && typeof api.then==='function' && !attached) {
+        attached = true;
+        api.then(value => {
+          if(value && typeof value.Mat==='function') finish(value);
+        }, fail);
+      }
+      timer = setTimeout(check, 100);
+    };
+    script.src = 'https://docs.opencv.org/4.10.0/opencv.js';
+    script.async = true;
+    script.onload = check;
+    script.onerror = fail;
+    document.head.appendChild(script);
+    setTimeout(fail, 45000);
+  }).catch(error => { engine = null; throw error });
+  return engine;
+}
+function imagecanvas(image) {
+  if(Math.min(image.naturalWidth, image.naturalHeight)<64 || image.naturalWidth*image.naturalHeight>25000000)
+    throw new Error('use a 64 × 64 px to 25 MP image');
+  const w = 320, h = 400;
+  const scale = Math.min(w/image.naturalWidth, h/image.naturalHeight);
+  const iw = Math.max(1, Math.round(image.naturalWidth*scale)), ih = Math.max(1, Math.round(image.naturalHeight*scale));
+  const temp = document.createElement('canvas');
+  temp.width = iw; temp.height = ih;
+  const t = temp.getContext('2d', { willReadFrequently: true });
+  t.fillStyle = '#fff'; t.fillRect(0, 0, iw, ih); t.drawImage(image, 0, 0, iw, ih);
+  const rgb = [0, 0, 0];
+  for(const [x, y] of [[0, 0], [iw-1, 0], [0, ih-1], [iw-1, ih-1]]) {
+    const p = t.getImageData(x, y, 1, 1).data;
+    for(let k = 0; k<3; k++) rgb[k] += p[k]/4;
+  }
+  const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = 'rgb('+rgb.map(Math.round).join(',')+')';
+  ctx.fillRect(0, 0, w, h); ctx.drawImage(temp, Math.floor((w-iw)/2), Math.floor((h-ih)/2));
+  return canvas;
+}
+function extract(cv, canvas) {
+  const src = cv.imread(canvas), gray = new cv.Mat(), smooth = new cv.Mat(), binary = new cv.Mat(), mask = cv.Mat.zeros(src.rows, src.cols, cv.CV_8UC1), contours = new cv.MatVector(), hierarchy = new cv.Mat();
+  const w = src.cols, h = src.rows;
+  const size = Math.max(3, Math.min(15, Math.floor(Math.min(w, h)/100)*2+1));
+  const kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE, new cv.Size(size, size));
+  try {
+    cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+    cv.GaussianBlur(gray, smooth, new cv.Size(5, 5), 0);
+    cv.threshold(smooth, binary, 0, 255, cv.THRESH_BINARY+cv.THRESH_OTSU);
+    const border = [];
+    for(let x = 0; x<w; x++) { border.push(binary.ucharPtr(0, x)[0], binary.ucharPtr(h-1, x)[0]) }
+    for(let y = 0; y<h; y++) { border.push(binary.ucharPtr(y, 0)[0], binary.ucharPtr(y, w-1)[0]) }
+    if(border.filter(v => v>0).length>border.length/2) cv.bitwise_not(binary, binary);
+    cv.morphologyEx(binary, binary, cv.MORPH_CLOSE, kernel);
+    cv.findContours(binary, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+    let index =-1, area = 0, other = 0;
+    for(let i = 0; i<contours.size(); i++) {
+      const c = contours.get(i);
+      try {
+        const a = cv.contourArea(c);
+        if(a>area) {
+          other += area;
+          area = a;
+          index = i;
+        } else other += a;
+      } finally { c.delete() }
+    }
+    if(index<0 || area/(w*h)<.02 || area/(w*h)>.85 || other>.25*area)
+      throw new Error('could not find a clear silhouette');
+    const contour = contours.get(index);
+    let box;
+    try { box = cv.boundingRect(contour) } finally { contour.delete() }
+    if(box.x<=1 || box.y<=1 || box.x+box.width>=w-1 || box.y+box.height>=h-1 || box.height<64 || box.height<1.2*box.width)
+      throw new Error('use a complete upright silhouette');
+    cv.drawContours(mask, contours, index, new cv.Scalar(255), -1);
+    const result = [];
+    for(let y = box.y; y<box.y+box.height; y++) {
+      const row = mask.ucharPtr(y);
+      let left =-1, right =-1;
+      for(let x = 0; x<w; x++) {
+        if(row[x]) {
+          if(left<0) left = x;
+          right = x;
+        }
+      }
+      if(right>left) result.push([y, left, right]);
+    }
+    if(result.length<.9*box.height) throw new Error('incomplete silhouette');
+    return result;
+  } finally {
+    [src, gray, smooth, binary, mask, contours, hierarchy, kernel].forEach(m => m.delete());
+  }
+}
+let request = 0;
+byid('upload').addEventListener('change', async event => {
+  const file = event.target.files[0];
+  if(!file) return;
+  const id = ++request;
+  if(!['image/png', 'image/jpeg', 'image/webp'].includes(file.type) || file.size>10000000) {
+    status('use PNG, JPG or WebP under 10 MB', true);
+    return;
+  }
+  status('loading image...');
+  byid('reset').hidden = false;
+  byid('upload').disabled = true;
+  const url = URL.createObjectURL(file);
+  try {
+    const image = new Image();
+    image.src = url;
+    await image.decode();
+    const { cv } = await opencv();
+    if(id!==request) return;
+    const canvas = imagecanvas(image);
+    const all = extract(cv, canvas);
+    draw(all, canvas.toDataURL('image/png'));
+    byid('parameters').hidden = true;
+    status('Showing '+file.name+'.');
+  } catch(error) {
+    if(id===request) {
+      status(error instanceof Error ? error.message: 'image processing failed, try another', true);
+    }
+  } finally {
+    URL.revokeObjectURL(url);
+    if(id===request) byid('upload').disabled = false;
+  }
+});
+byid('reset').addEventListener('click', () => {
+  request++;
+  byid('upload').value = '';
+  byid('upload').disabled = false;
+  byid('parameters').hidden = false;
+  byid('reset').hidden = true;
+  status('');
+  update();
+});
+byid('bend').addEventListener('input', update);
+update();
+</script>
+</body>
+</html>
